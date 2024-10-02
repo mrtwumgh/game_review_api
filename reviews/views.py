@@ -1,11 +1,13 @@
-from reviews.serializers import UserRegistrationSerializer
-from rest_framework import generics
+from reviews.serializers import (
+    UserRegistrationSerializer,
+    ReviewSerializer,
+)
+from rest_framework import generics, permissions
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-
+from reviews.models import Review
+from reviews.permissions import IsOwner
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -18,11 +20,35 @@ class UserRegistrationView(generics.CreateAPIView):
         token, created = Token.objects.get_or_create(user=user)
         return Response({
             'user': response.data,
-            'token': token.key,
+            'token': token.key
         })
-    
-class HelloWorldView(APIView):
-    permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
-        return Response({"message": "Hello, User is Authenticated"})
+
+
+class ReviewListView(generics.ListAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.AllowAny]
+
+class ReviewCreateView(generics.CreateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class ReviewDetailView(generics.RetrieveAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.AllowAny]
+
+class ReviewUpdateView(generics.UpdateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
+
+class ReviewDeleteView(generics.DestroyAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
