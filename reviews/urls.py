@@ -11,4 +11,7 @@ urlpatterns = [
     path('reviews/<int:pk>/', review_views.ReviewDetailView.as_view(), name='review-detail'),
     path('reviews/<int:pk>/update/', review_views.ReviewUpdateView.as_view(), name='review-update'),
     path('reviews/<int:pk>/delete', review_views.ReviewDeleteView.as_view(), name='review-delete'),
+    # Game list urls
+    path('games/', review_views.GameListView.as_view(), name='game-list'),
+    path('games/<int:pk>/', review_views.GameDetailView.as_view(), name='game-detail')
 ]

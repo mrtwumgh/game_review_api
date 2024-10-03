@@ -1,12 +1,13 @@
 from reviews.serializers import (
     UserRegistrationSerializer,
     ReviewSerializer,
+    GameSerializer,
 )
 from rest_framework import generics, permissions
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from reviews.models import Review
+from reviews.models import Review, Game
 from reviews.permissions import IsOwner
 
 
@@ -52,3 +53,15 @@ class ReviewDeleteView(generics.DestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwner]
+
+
+# Game Title Views
+class GameListView(generics.ListAPIView):
+    queryset = Game.objects.all()
+    serializer_class = GameSerializer
+    permission_classes = [permissions.AllowAny]
+
+class GameDetailView(generics.RetrieveAPIView):
+    queryset = Game.objects.all()
+    serializer_class = GameSerializer
+    permission_classes = [permissions.AllowAny]
