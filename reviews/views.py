@@ -3,12 +3,13 @@ from reviews.serializers import (
     ReviewSerializer,
     GameSerializer,
 )
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, filters
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from reviews.models import Review, Game
 from reviews.permissions import IsOwner
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -30,6 +31,11 @@ class ReviewListView(generics.ListAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [permissions.AllowAny]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filterset_fields = ['rating', 'game__title']
+    search_fields = ['review_content', 'game_title']
+    ordering_fields = ['rating', 'created_date']
+    ordering = ['-created_date']
 
 class ReviewCreateView(generics.CreateAPIView):
     queryset = Review.objects.all()
