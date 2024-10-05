@@ -3,13 +3,17 @@ from reviews.serializers import (
     ReviewSerializer,
     GameSerializer,
 )
-from rest_framework import generics, permissions, filters
+from rest_framework import generics, permissions, filters, status
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from reviews.models import Review, Game
+from reviews.models import Review, Game, ReviewLike
+from users.models import Profile
 from reviews.permissions import IsOwner
 from django_filters.rest_framework import DjangoFilterBackend
+from django.shortcuts import get_object_or_404
+from django.db.models import Count
+from rest_framework.views import APIView
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -59,6 +63,37 @@ class ReviewDeleteView(generics.DestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwner]
+
+# Action Views
+class LikeReview(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        review = get_object_or_404(Review, pk=pk)
+        like, created = ReviewLike.objects.get_or_create(user=request.user, review=review)
+        if not created:
+            return Response({"detail": "You already liked this review."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "Review Liked"}, status=status.HTTP_201_CREATED)
+    
+    def delete(self, request, pk):
+        review = get_object_or_404(Review, pk=pk)
+        like = ReviewLike.objects.filter(user=request.user, review=review)
+        if like.exists():
+            like.delete()
+            return Response({"detail": "Like removed."}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"detail": "You have not liked this review"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class MostLikedReviews(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        game_title = self.request.query_params.get('game_title', None)
+        if game_title:
+            return Review.objects.filter(game__title=game_title).annotate(like_count=Count('likes')).order_by('-like_count')
+        else:
+            return Review.objects.annotate(like_count=Count('likes')).order_by('-like_count')
 
 
 # Game Title Views
