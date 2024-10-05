@@ -2,12 +2,13 @@ from reviews.serializers import (
     UserRegistrationSerializer,
     ReviewSerializer,
     GameSerializer,
+    CommentSerializer
 )
 from rest_framework import generics, permissions, filters, status
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from reviews.models import Review, Game, ReviewLike
+from reviews.models import Review, Game, ReviewLike, Comment
 from users.models import Profile
 from reviews.permissions import IsOwner
 from django_filters.rest_framework import DjangoFilterBackend
@@ -15,7 +16,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from rest_framework.views import APIView
 
-
+# User Views
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
@@ -30,7 +31,7 @@ class UserRegistrationView(generics.CreateAPIView):
         })
 
 
-
+# Review Views
 class ReviewListView(generics.ListAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -64,7 +65,7 @@ class ReviewDeleteView(generics.DestroyAPIView):
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwner]
 
-# Action Views
+# Like Views
 class LikeReview(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -94,6 +95,39 @@ class MostLikedReviews(generics.ListAPIView):
             return Review.objects.filter(game__title=game_title).annotate(like_count=Count('likes')).order_by('-like_count')
         else:
             return Review.objects.annotate(like_count=Count('likes')).order_by('-like_count')
+
+
+# Comment Views
+class CommentListView(generics.ListAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        review_id = self.kwargs['review_id']
+        return Comment.objects.filter(review__id=review_id)
+    
+class CommentCreateView(generics.CreateAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        review_id = self.kwargs['review_id']
+        serializer.save(user=self.request.user, review_id=review_id)
+
+class CommentDetailView(generics.RetrieveAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.AllowAny]
+
+class CommentUpdateView(generics.UpdateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
+
+class CommentDeleteView(generics.DestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
 
 
 # Game Title Views

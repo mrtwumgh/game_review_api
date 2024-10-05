@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from reviews.models import Review, Game, ReviewLike
+from reviews.models import Review, Game, ReviewLike, Comment
 
 
 
@@ -47,3 +47,20 @@ class ReviewLikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewLike
         fields = ['id', 'user', 'review', 'created_at']
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+    created_date = serializers.ReadOnlyField()
+    updated_date = serializers.ReadOnlyField()
+    review = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'review', 'user', 'content', 'created_date', 'updated_date']
+        read_only_fields = ['user', 'review', 'created_date', 'updated_date']
+
+    def validate_content(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Comment cannot be empty")
+        return value
